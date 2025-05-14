@@ -2,6 +2,7 @@ package main
 
 import (
 	"io"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -49,4 +50,23 @@ func TestCtx(t *testing.T)  {
 	bytes1, err1 := io.ReadAll(response1.Body)
 	assert.Nil(t, err1)
 	assert.Equal(t, "Hello Guest", string(bytes1))
+}
+
+func TestHttpRequest(t *testing.T)  {
+	app.Get("/request", func (ctx *fiber.Ctx) error {
+		first := ctx.Get("firstname")
+		last := ctx.Cookies("lastname")
+		return ctx.SendString("Hello " + first + " " + last)
+	})
+
+	request := httptest.NewRequest("GET", "/request", nil)
+	request.Header.Set("firstname", "Fahril")
+	request.AddCookie(&http.Cookie{Name: "lastname", Value: "Hadi"})
+	response, err := app.Test(request)
+	assert.Nil(t, err)
+	assert.Equal(t, 200, response.StatusCode)
+
+	bytes, err := io.ReadAll(response.Body)
+	assert.Nil(t, err)
+	assert.Equal(t, "Hello Fahril Hadi", string(bytes))
 }
